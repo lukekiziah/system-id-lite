@@ -17,6 +17,24 @@ assert.ok(modelStart >= 0 && modelEnd > modelStart, "CSV parser and fit routine 
 const context = {};
 vm.runInNewContext(mainScript[1].slice(modelStart, modelEnd), context);
 
+test("built-in broadband sample data fits every supported model order", () => {
+    const data = context.createSampleData();
+    assert.equal(data.time.length, 512);
+    assert.ok(data.input.some(value => value < 0) && data.input.some(value => value > 0));
+
+    for (let order = 1; order <= 6; order++) {
+        const model = context.identifyModel(data, order);
+        assert.equal(model.order, order);
+        assert.ok(Number.isFinite(model.r2), `order ${order} should have a finite R²`);
+        assert.ok(model.confidenceIntervals.every(interval =>
+            interval && interval.every(Number.isFinite)), `order ${order} should have finite confidence intervals`);
+    }
+
+    const fullOrderFit = context.identifyModel(data, 6);
+    assert.ok(fullOrderFit.r2 > 1 - 1e-10, `sixth-order sample fit R²=${fullOrderFit.r2}`);
+    assert.ok(fullOrderFit.sse < 1e-16, `sixth-order sample fit SSE=${fullOrderFit.sse}`);
+});
+
 const timeStep = 0.1;
 const trueA = [1.15, -0.28];
 const trueB = [0.12, 0.04];

@@ -864,7 +864,7 @@
 
                 <div class="actions">
                     <button class="button button-primary" id="analyze-button" type="button" disabled>Fit model</button>
-                    <button class="button button-secondary" id="sample-button" type="button">Try sample data</button>
+                    <button class="button button-secondary" id="sample-button" type="button">Try sample data (orders 1–6)</button>
                     <button class="button button-secondary" id="reset-button" type="button" hidden>Clear</button>
                 </div>
                 <p class="status" id="status" role="status" aria-live="polite">Choose a CSV file to get started.</p>
@@ -1338,6 +1338,39 @@
                 + (z3 + z) / (4 * nu)
                 + (5 * z5 + 16 * z3 + 3 * z) / (96 * nu ** 2)
                 + (3 * z7 + 19 * z5 + 17 * z3 - 15 * z) / (384 * nu ** 3);
+        }
+
+        function createSampleData() {
+            const sampleCount = 512;
+            const poles = [0.72, 0.57, 0.41, 0.26, 0.13, -0.18];
+            const denominator = [1];
+            for (const pole of poles) {
+                denominator.push(0);
+                for (let i = denominator.length - 1; i > 0; i--) {
+                    denominator[i] -= pole * denominator[i - 1];
+                }
+            }
+            const a = denominator.slice(1).map(value => -value);
+            const b = [0.08, 0.03, -0.02, 0.015, 0.01, -0.005];
+            const time = [];
+            const input = [];
+            const output = Array(sampleCount).fill(0);
+            let randomState = 0x6d2b79f5;
+
+            for (let k = 0; k < sampleCount; k++) {
+                time.push(k * 0.1);
+                randomState = Math.imul(randomState ^ (randomState >>> 15), randomState | 1);
+                randomState ^= randomState + Math.imul(randomState ^ (randomState >>> 7), randomState | 61);
+                const randomValue = (randomState ^ (randomState >>> 14)) >>> 0;
+                input.push((randomValue & 1) === 0 ? -1 : 1);
+
+                for (let lag = 1; lag <= a.length && lag <= k; lag++) {
+                    output[k] += a[lag - 1] * output[k - lag];
+                    output[k] += b[lag - 1] * input[k - lag];
+                }
+            }
+
+            return { time, input, output };
         }
 
         function complex(re, im = 0) { return { re, im }; }
@@ -1866,18 +1899,8 @@
         });
 
         sampleButton.addEventListener("click", () => {
-            orderInput.value = "1";
-            const time = [];
-            const input = [];
-            const output = [];
-            const samples = 61;
-            for (let k = 0; k < samples; k++) {
-                time.push(k * 0.1);
-                input.push(k >= 10 ? 1 : 0);
-                output.push(k === 0 ? 0 : 0.8 * output[k - 1] + 0.2 * input[k - 1]);
-            }
             fileInput.value = "";
-            setData({ time, input, output }, "sample data");
+            setData(createSampleData(), "broadband sample data");
             analyzeButton.focus();
         });
 

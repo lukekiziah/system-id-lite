@@ -4,6 +4,8 @@ The transfer-function conversion test suite exercises the conversion code embedd
 
 The identification cases generate deterministic CSV input/output data for a triangular ramp, sine wave, and chirp, then call the same CSV parser and least-squares routines used by the page. They also assert the correct error for missing CSV columns/values, invalid numbers, non-increasing times, too few samples, zero excitation, and rank-deficient regressors.
 
+The built-in broadband demo is also checked at every supported order (1–6); it uses a deterministic rich input and a stable sixth-order system so the full-order regression is identifiable while lower-order fits remain usable demonstrations.
+
 Requirements: Node.js 22 or newer. Run locally from the repository root:
 
 ```sh
