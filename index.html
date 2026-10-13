@@ -3,345 +3,1967 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>System ID Lite</title>
-
+    <meta name="description" content="Identify discrete-time dynamic system models from input-output data with least-squares regression.">
+    <meta name="theme-color" content="#f5f7fb">
+    <title>System ID Lite — Dynamic Model Fitting</title>
     <style>
+        :root {
+            color-scheme: light;
+            --ink: #17223b;
+            --muted: #64718a;
+            --line: #e1e7f0;
+            --surface: #fff;
+            --canvas: #f5f7fb;
+            --blue: #315ee8;
+            --blue-dark: #2349c4;
+            --teal: #11998e;
+            --red: #e05c62;
+            --shadow: 0 12px 36px rgb(25 43 81 / 6%);
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 0 20px;
-            background: #f5f7fa;
-            color: #222;
+            margin: 0;
+            background: var(--canvas);
+            color: var(--ink);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.55;
+        }
+
+        button, input, select { font: inherit; }
+        button { cursor: pointer; }
+
+        .page-shell {
+            width: min(1120px, calc(100% - 40px));
+            margin: 0 auto;
+        }
+
+        .site-header {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 24px 0;
+            color: #42516f;
+            font-size: 0.84rem;
+            font-weight: 750;
+            letter-spacing: 0.11em;
+            text-transform: uppercase;
+        }
+
+        .brand-mark {
+            display: grid;
+            width: 30px;
+            height: 30px;
+            place-items: center;
+            border-radius: 9px;
+            background: var(--blue);
+            color: #fff;
+            font-size: 0.95rem;
+            letter-spacing: 0;
+        }
+
+        .hero { padding: 30px 0 26px; }
+        .eyebrow {
+            margin: 0 0 8px;
+            color: var(--blue);
+            font-size: 0.77rem;
+            font-weight: 800;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
         }
 
         h1 {
-            margin-bottom: 8px;
+            max-width: 780px;
+            margin: 0;
+            font-size: clamp(2.1rem, 5vw, 3.45rem);
+            letter-spacing: -0.045em;
+            line-height: 1.08;
         }
 
-        .card {
-            background: white;
-            padding: 24px;
-            margin-top: 24px;
-            border-radius: 10px;
-            border: 1px solid #ddd;
+        .hero-copy {
+            max-width: 720px;
+            margin: 16px 0 0;
+            color: var(--muted);
+            font-size: 1.06rem;
         }
 
-        button {
-            padding: 10px 16px;
-            cursor: pointer;
+        .local-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 18px;
+            color: #3e5872;
+            font-size: 0.88rem;
         }
 
-        #status {
-            margin-top: 16px;
+        .local-note::before {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #1ca77d;
+            content: "";
         }
 
-        #plot-area {
-            height: 300px;
+        .panel {
+            margin: 20px 0;
+            padding: clamp(20px, 4vw, 32px);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+
+        .section-heading {
             display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 22px;
+        }
+
+        .step-number {
+            display: grid;
+            flex: 0 0 36px;
+            width: 36px;
+            height: 36px;
+            place-items: center;
+            border-radius: 11px;
+            background: #edf1ff;
+            color: var(--blue);
+            font-size: 0.85rem;
+            font-weight: 800;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 1.18rem;
+            letter-spacing: -0.02em;
+        }
+
+        .section-description {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.93rem;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: minmax(180px, 240px) 1fr;
+            gap: 20px;
+            align-items: end;
+            margin-bottom: 18px;
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 0.88rem;
+            font-weight: 720;
+        }
+
+        select {
+            width: 100%;
+            min-height: 45px;
+            padding: 9px 12px;
+            border: 1px solid #cbd4e2;
+            border-radius: 9px;
+            background: #fff;
+            color: var(--ink);
+        }
+
+        .field-hint {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 0.79rem;
+        }
+
+        .drop-zone {
+            display: flex;
+            min-height: 145px;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #777;
-            border: 1px dashed #bbb;
-            margin-top: 16px;
+            padding: 20px;
+            border: 1.5px dashed #b9c6da;
+            border-radius: 13px;
+            background: #fafbfe;
+            text-align: center;
+            transition: border-color 140ms ease, background 140ms ease;
+        }
+
+        .drop-zone.dragging {
+            border-color: var(--blue);
+            background: #f0f4ff;
+        }
+
+        .drop-icon {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            margin-bottom: 9px;
+            place-items: center;
+            border-radius: 12px;
+            background: #edf1ff;
+            color: var(--blue);
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .drop-zone strong { font-size: 0.94rem; }
+        .drop-zone span { margin-top: 3px; color: var(--muted); font-size: 0.82rem; }
+        .file-input { display: none; }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 17px;
+        }
+
+        .button {
+            min-height: 43px;
+            padding: 9px 16px;
+            border: 1px solid transparent;
+            border-radius: 9px;
+            font-size: 0.9rem;
+            font-weight: 730;
+            transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+        }
+
+        .button:not(:disabled):hover { transform: translateY(-1px); }
+        .button-primary { background: var(--blue); color: #fff; }
+        .button-primary:not(:disabled):hover { background: var(--blue-dark); }
+        .button-primary:disabled { cursor: not-allowed; opacity: 0.52; }
+        .button-secondary { border-color: var(--line); background: #fff; color: #34425e; }
+        .button-secondary:hover { border-color: #b8c4d7; background: #f9faff; }
+
+        .status {
+            min-height: 24px;
+            margin: 15px 0 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .status[data-kind="error"] { color: #b42332; }
+        .status[data-kind="success"] { color: #16704f; }
+
+        .csv-help {
+            margin: 15px 0 0;
+            color: var(--muted);
+            font-size: 0.83rem;
+        }
+
+        code {
+            padding: 2px 5px;
+            border-radius: 5px;
+            background: #f0f3f8;
+            color: #34425e;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 0.9em;
+        }
+
+        [hidden] { display: none !important; }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 18px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin: 19px 0 24px;
+        }
+
+        .metric {
+            min-width: 0;
+            padding: 15px;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            background: #fbfcff;
+        }
+
+        .metric-label {
+            display: block;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 650;
+        }
+
+        .metric-value {
+            display: block;
+            overflow-wrap: anywhere;
+            margin-top: 5px;
+            font-size: 1.23rem;
+            font-variant-numeric: tabular-nums;
+            font-weight: 780;
+            letter-spacing: -0.025em;
+        }
+
+        .chart-frame {
+            min-height: 480px;
+            margin: 15px 0 22px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        #plot-area { min-height: 480px; }
+
+        .chart-placeholder {
+            display: grid;
+            min-height: 478px;
+            place-items: center;
+            padding: 20px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 16px;
+        }
+
+        .detail-card {
+            min-width: 0;
+            padding: 19px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+        }
+
+        .detail-card h3 {
+            margin: 0 0 12px;
+            font-size: 0.98rem;
+        }
+
+        .equation {
+            overflow-x: auto;
+            margin: 0;
+            padding: 13px;
+            border-radius: 9px;
+            background: #f6f8fc;
+            color: #24334f;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 0.86rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .coefficient-table, .pole-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.84rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .coefficient-table th, .coefficient-table td,
+        .pole-table th, .pole-table td {
+            padding: 8px 7px;
+            border-bottom: 1px solid #edf0f5;
+            text-align: left;
+        }
+
+        .coefficient-table th, .pole-table th {
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .coefficient-table td:not(:first-child) { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+        .pole-table tr:last-child td, .coefficient-table tr:last-child td { border-bottom: 0; }
+
+        .model-note {
+            margin: 14px 0 0;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .domain-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin: 24px 0 15px;
+        }
+
+        .domain-controls h3 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .conversion-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .conversion-control label {
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .conversion-control select {
+            width: auto;
+            min-height: 36px;
+            padding: 5px 9px;
+            font-size: 0.82rem;
+        }
+
+        .segmented-control {
+            display: inline-flex;
+            gap: 3px;
+            padding: 3px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: #f6f8fc;
+        }
+
+        .segmented-control button {
+            min-height: 33px;
+            padding: 5px 12px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.82rem;
+            font-weight: 720;
+        }
+
+        .segmented-control button[aria-pressed="true"] {
+            background: #fff;
+            color: var(--blue);
+            box-shadow: 0 1px 4px rgb(25 43 81 / 12%);
+        }
+
+        .domain-note {
+            margin: 0 0 15px;
+            padding: 11px 13px;
+            border-radius: 8px;
+            background: #f5f7ff;
+            color: #4d5a76;
+            font-size: 0.82rem;
+        }
+
+        .confidence-note {
+            margin: 12px 0 0;
+            color: var(--muted);
+            font-size: 0.79rem;
+        }
+
+        .frequency-section {
+            margin-top: 26px;
+            padding-top: 22px;
+            border-top: 1px solid var(--line);
+        }
+
+        .frequency-heading {
+            margin-bottom: 7px;
+            font-size: 1.06rem;
+        }
+
+        .frequency-copy {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .frequency-chart {
+            min-height: 380px;
+            margin-top: 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .frequency-chart > div { min-height: 380px; }
+
+        .margin-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 13px;
+        }
+
+        @media (max-width: 760px) {
+            .margin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        .method-note {
+            margin: 20px 0 0;
+            padding: 13px 15px;
+            border-left: 3px solid #9eafff;
+            border-radius: 0 8px 8px 0;
+            background: #f5f7ff;
+            color: #4d5a76;
+            font-size: 0.84rem;
+        }
+
+        .ad-slot {
+            margin: 18px 0 24px;
+            text-align: center;
+        }
+
+        .ad-label {
+            margin-bottom: 5px;
+            color: var(--muted);
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .ad-slot ins {
+            display: block;
+            min-height: 90px;
+        }
+
+        footer {
+            padding: 20px 0 35px;
+            color: #78849a;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .detail-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 560px) {
+            .page-shell { width: min(100% - 26px, 1120px); }
+            .site-header { padding: 17px 0; }
+            .hero { padding: 20px 0 16px; }
+            .controls { grid-template-columns: 1fr; gap: 14px; }
+            .results-header { align-items: flex-start; flex-direction: column; }
+            .chart-frame, #plot-area { min-height: 410px; }
+            .chart-placeholder { min-height: 408px; }
+            .metric { padding: 12px; }
+            .metric-value { font-size: 1.08rem; }
         }
     </style>
     <script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script>
-</head>
-
-<body>
-
-    <h1>System ID Lite</h1>
-
-    <p>
-        Identify dynamic system models from experimental data.
-    </p>
-
-    <section class="card">
-        <h2>1. Upload Experimental Data</h2>
-
-        <p>
-            Upload a CSV file containing time and measured response.
-        </p>
-
-        <input type="file" id="data-file" accept=".csv">
-
-        <br><br>
-
-        <button id="analyze-button" disabled>
-            Analyze Data
-        </button>
-
-        <p id="status">Waiting for a CSV file.</p>
-    </section>
-
-    <section class="card">
-        <h2>2. Model Results</h2>
-
-        <p>
-            Estimated parameters and model fit will appear here.
-        </p>
-
-        <div id="plot-area">
-            Experimental data and model predictions will appear here.
-        </div>
-    </section>
-    <script>
-const fileInput = document.getElementById("data-file");
-const analyzeButton = document.getElementById("analyze-button");
-const status = document.getElementById("status");
-
-let experimentalData = null;
-
-// Enable the button after a file is selected.
-fileInput.addEventListener("change", () => {
-    experimentalData = null;
-
-    analyzeButton.disabled = true;
-
-    if (!fileInput.files.length) {
-        status.textContent = "Waiting for a CSV file.";
-        return;
-    }
-
-    const file = fileInput.files[0];
-
-    const reader = new FileReader();
-
-    reader.onload = event => {
-        try {
-            experimentalData = parseCSV(event.target.result);
-
-            status.textContent =
-                `Loaded ${experimentalData.time.length} data points.`;
-
-            analyzeButton.disabled = false;
-        } catch (error) {
-            experimentalData = null;
-            status.textContent = "Error: " + error.message;
-        }
-    };
-
-    reader.onerror = () => {
-        status.textContent = "Could not read the selected file.";
-    };
-
-    reader.readAsText(file);
-});
-
-
-// Parse a CSV with columns: time,input,output.
-function parseCSV(text) {
-    const lines = text.trim().split(/\r?\n/);
-
-    if (lines.length < 4) {
-        throw new Error("Provide a header and at least three data rows.");
-    }
-
-    const header = lines[0]
-        .split(",")
-        .map(value => value.trim().toLowerCase());
-
-    const timeIndex = header.indexOf("time");
-    const inputIndex = header.indexOf("input");
-    const outputIndex = header.indexOf("output");
-
-    if ([timeIndex, inputIndex, outputIndex].includes(-1)) {
-        throw new Error(
-            "CSV headers must include time, input, and output."
-        );
-    }
-
-    const time = [];
-    const input = [];
-    const output = [];
-
-    for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(",");
-
-        if (row.every(value => value.trim() === "")) {
-            continue;
-        }
-
-        const t = Number(row[timeIndex]);
-        const u = Number(row[inputIndex]);
-        const y = Number(row[outputIndex]);
-
-        if (![t, u, y].every(Number.isFinite)) {
-            throw new Error(`Invalid numeric data on line ${i + 1}.`);
-        }
-
-        time.push(t);
-        input.push(u);
-        output.push(y);
-    }
-
-    if (time.length < 3) {
-        throw new Error("At least three valid data points are required.");
-    }
-
-    for (let i = 1; i < time.length; i++) {
-        if (time[i] <= time[i - 1]) {
-            throw new Error("Time must be strictly increasing.");
-        }
-    }
-
-    return { time, input, output };
-}
-
-
-// Estimate a first-order model using discrete-time least squares:
-//
-// y[k+1] = a*y[k] + b*u[k]
-//
-// For a zero-order-held input:
-// a = exp(-dt/tau)
-// b = K*(1-a)
-function identifyFirstOrder(data) {
-    const { time, input, output } = data;
-
-    let sumPhi1Squared = 0;
-    let sumPhi1Phi2 = 0;
-    let sumPhi2Squared = 0;
-
-    let sumPhi1Y = 0;
-    let sumPhi2Y = 0;
-
-    // Least-squares regression.
-    for (let k = 0; k < time.length - 1; k++) {
-        const phi1 = output[k];
-        const phi2 = input[k];
-        const target = output[k + 1];
-
-        sumPhi1Squared += phi1 * phi1;
-        sumPhi1Phi2 += phi1 * phi2;
-        sumPhi2Squared += phi2 * phi2;
-
-        sumPhi1Y += phi1 * target;
-        sumPhi2Y += phi2 * target;
-    }
-
-    const determinant =
-        sumPhi1Squared * sumPhi2Squared -
-        sumPhi1Phi2 * sumPhi1Phi2;
-
-    if (Math.abs(determinant) < 1e-12) {
-        throw new Error(
-            "The data do not sufficiently excite the model for parameter estimation."
-        );
-    }
-
-    const a =
-        (sumPhi2Squared * sumPhi1Y -
-         sumPhi1Phi2 * sumPhi2Y) / determinant;
-
-    const b =
-        (sumPhi1Squared * sumPhi2Y -
-         sumPhi1Phi2 * sumPhi1Y) / determinant;
-
-    if (!(a > 0 && a < 1)) {
-        throw new Error(
-            "The fitted model is not a stable first-order model with a positive time constant."
-        );
-    }
-
-    const dtValues = [];
-
-    for (let k = 0; k < time.length - 1; k++) {
-        dtValues.push(time[k + 1] - time[k]);
-    }
-
-    const dt = dtValues.reduce((sum, value) => sum + value, 0)
-        / dtValues.length;
-
-    const tau = -dt / Math.log(a);
-    const K = b / (1 - a);
-
-    return { a, b, K, tau, dt };
-}
-
-
-// Simulate the identified discrete-time model.
-function simulateModel(data, model) {
-    const { time, input, output } = data;
-    const prediction = [output[0]];
-
-    for (let k = 0; k < time.length - 1; k++) {
-        prediction.push(
-            model.a * prediction[k] + model.b * input[k]
-        );
-    }
-
-    return prediction;
-}
-
-
-// Calculate the coefficient of determination.
-function calculateR2(measured, predicted) {
-    const mean =
-        measured.reduce((sum, value) => sum + value, 0)
-        / measured.length;
-
-    let residualSum = 0;
-    let totalSum = 0;
-
-    for (let i = 0; i < measured.length; i++) {
-        residualSum += (measured[i] - predicted[i]) ** 2;
-        totalSum += (measured[i] - mean) ** 2;
-    }
-
-    return totalSum > 0 ? 1 - residualSum / totalSum : NaN;
-}
-
-
-// Run the analysis when the button is clicked.
-analyzeButton.addEventListener("click", () => {
-    if (!experimentalData) {
-        return;
-    }
-
-    try {
-        const model = identifyFirstOrder(experimentalData);
-
-        const prediction = simulateModel(experimentalData, model);
-
-        const r2 = calculateR2(
-            experimentalData.output,
-            prediction
-        );
-
-        status.textContent =
-            `Estimated gain K = ${model.K.toFixed(4)}\n` +
-            `Estimated time constant τ = ${model.tau.toFixed(4)} s\n` +
-            `R² = ${Number.isFinite(r2) ? r2.toFixed(4) : "undefined"}`;
-
-        Plotly.newPlot("plot-area", [
-            {
-                x: experimentalData.time,
-                y: experimentalData.output,
-                mode: "markers",
-                name: "Measured output"
-            },
-            {
-                x: experimentalData.time,
-                y: prediction,
-                mode: "lines",
-                name: "Model prediction"
+    <script id="system-id-conversions">
+        (function (root) {
+            "use strict";
+
+            function complex(re, im = 0) { return { re, im }; }
+            function add(left, right) { return complex(left.re + right.re, left.im + right.im); }
+            function subtract(left, right) { return complex(left.re - right.re, left.im - right.im); }
+            function multiply(left, right) {
+                return complex(left.re * right.re - left.im * right.im, left.re * right.im + left.im * right.re);
             }
-        ], {
-            title: "Measured Response vs. Model Prediction",
-            xaxis: { title: "Time (s)" },
-            yaxis: { title: "Output" },
-            autosize: true
-        }, {
-            responsive: true
+            function divide(left, right) {
+                const denominator = right.re * right.re + right.im * right.im;
+                if (denominator < 1e-28) throw new Error("Conversion encountered a singular polynomial value.");
+                return complex(
+                    (left.re * right.re + left.im * right.im) / denominator,
+                    (left.im * right.re - left.re * right.im) / denominator
+                );
+            }
+            function magnitude(value) { return Math.hypot(value.re, value.im); }
+
+            function trimPolynomial(coefficients, tolerance = 1e-13) {
+                let first = 0;
+                while (first < coefficients.length - 1
+                    && (typeof coefficients[first] === "number" ? Math.abs(coefficients[first]) : magnitude(coefficients[first])) < tolerance) first++;
+                return coefficients.slice(first);
+            }
+
+            function evaluatePolynomial(coefficients, value) {
+                let result = complex(0);
+                for (const coefficient of coefficients) result = add(multiply(result, value), complex(coefficient));
+                return result;
+            }
+
+            function polynomialDerivative(coefficients) {
+                const degree = coefficients.length - 1;
+                return coefficients.slice(0, -1).map((coefficient, index) => coefficient * (degree - index));
+            }
+
+            function polynomialFromRoots(roots) {
+                let coefficients = [complex(1)];
+                for (const root of roots) {
+                    const next = Array.from({ length: coefficients.length + 1 }, () => complex(0));
+                    coefficients.forEach((coefficient, index) => {
+                        next[index] = add(next[index], coefficient);
+                        next[index + 1] = subtract(next[index + 1], multiply(coefficient, root));
+                    });
+                    coefficients = next;
+                }
+                return coefficients;
+            }
+
+            function polynomialRoots(coefficients) {
+                const polynomial = trimPolynomial(coefficients);
+                const degree = polynomial.length - 1;
+                if (degree < 1) return [];
+                if (degree === 1) return [complex(-polynomial[1] / polynomial[0])];
+                const radius = 1 + Math.max(...polynomial.slice(1).map(value => Math.abs(value / polynomial[0])));
+                let roots = Array.from({ length: degree }, (_, index) => {
+                    const angle = 2 * Math.PI * (index + 0.37) / degree;
+                    return complex(radius * Math.cos(angle), radius * Math.sin(angle));
+                });
+
+                for (let iteration = 0; iteration < 5000; iteration++) {
+                    let largestCorrection = 0;
+                    const nextRoots = roots.map((root, index) => {
+                        const value = evaluatePolynomial(polynomial, root);
+                        let denominator = complex(polynomial[0]);
+                        for (let j = 0; j < degree; j++) {
+                            if (j !== index) denominator = multiply(denominator, subtract(root, roots[j]));
+                        }
+                        const correction = divide(value, denominator);
+                        largestCorrection = Math.max(largestCorrection, magnitude(correction));
+                        return subtract(root, correction);
+                    });
+                    roots = nextRoots;
+                    if (largestCorrection < 1e-11) {
+                        const maximumResidual = Math.max(...roots.map(root => magnitude(evaluatePolynomial(polynomial, root))));
+                        const coefficientScale = Math.max(1, ...polynomial.map(Math.abs));
+                        if (maximumResidual > 1e-7 * coefficientScale) break;
+                        for (let i = 0; i < roots.length; i++) {
+                            for (let j = i + 1; j < roots.length; j++) {
+                                if (magnitude(subtract(roots[i], roots[j]))
+                                    < 1e-7 * Math.max(1, magnitude(roots[i]), magnitude(roots[j]))) {
+                                    throw new Error("Repeated or near-repeated polynomial roots are unsupported by this conversion.");
+                                }
+                            }
+                        }
+                        return roots;
+                    }
+                }
+                throw new Error("Could not resolve the transfer-function roots; repeated or ill-conditioned roots may not be supported.");
+            }
+
+            function normalizeRealPolynomial(coefficients) {
+                let result = trimPolynomial(coefficients).map(value => value.re);
+                const leading = result[0];
+                if (!Number.isFinite(leading) || Math.abs(leading) < 1e-14) {
+                    throw new Error("Conversion produced a singular polynomial.");
+                }
+                result = result.map(value => value / leading);
+                return result;
+            }
+
+            function evaluateContinuous(model, frequency) {
+                const s = complex(0, frequency);
+                const numerator = evaluatePolynomial(model.numerator, s);
+                const denominator = evaluatePolynomial(model.denominator, s);
+                return divide(numerator, denominator);
+            }
+
+            function matchedPolesZeros(discreteNumerator, discreteDenominator, dt, dcGain) {
+                const zeros = polynomialRoots(discreteNumerator);
+                const discretePoles = polynomialRoots(discreteDenominator);
+                const toContinuousPole = pole => {
+                    if (magnitude(pole) < 1e-13) {
+                        throw new Error("Matched pole-zero conversion cannot represent a pole at z = 0.");
+                    }
+                    return complex(Math.log(magnitude(pole)) / dt, Math.atan2(pole.im, pole.re) / dt);
+                };
+                const continuousPoles = discretePoles.map(toContinuousPole);
+                const continuousZeros = zeros.filter(zero => magnitude(zero) > 1e-13).map(toContinuousPole);
+                if (continuousZeros.some(zero => magnitude(zero) < 1e-12)) {
+                    throw new Error("Matched pole-zero conversion cannot preserve a zero at DC with finite nonzero DC gain.");
+                }
+
+                const monicNumerator = polynomialFromRoots(continuousZeros);
+                const denominator = polynomialFromRoots(continuousPoles);
+                const dcNumerator = monicNumerator[monicNumerator.length - 1];
+                const dcDenominator = denominator[denominator.length - 1];
+                if (Math.abs(dcNumerator.im) > 1e-7) {
+                    throw new Error("Matched pole-zero conversion would produce complex coefficients for this root configuration.");
+                }
+                if (Math.abs(dcDenominator.im) > 1e-7 || Math.abs(dcNumerator.re) < 1e-14) {
+                    throw new Error("Could not preserve the fitted DC gain in matched pole-zero conversion.");
+                }
+                const gain = dcGain * dcDenominator.re / dcNumerator.re;
+                const scaledNumerator = monicNumerator.map(value => multiply(value, complex(gain)));
+                if (scaledNumerator.some(value => Math.abs(value.im) > 1e-7 * Math.max(1, Math.abs(value.re)))) {
+                    throw new Error("Matched pole-zero conversion would produce complex coefficients for this root configuration.");
+                }
+                const numerator = scaledNumerator.map(value => value.re);
+                return {
+                    method: "matched",
+                    numerator,
+                    denominator: normalizeRealPolynomial(denominator),
+                    poles: continuousPoles,
+                    zeros: continuousZeros
+                };
+            }
+
+            function bilinear(discreteNumerator, discreteDenominator, dt) {
+                const degree = discreteDenominator.length - 1;
+                const addRealPolynomials = (left, right) => Array.from(
+                    { length: Math.max(left.length, right.length) },
+                    (_, index) => (left[index] || 0) + (right[index] || 0)
+                );
+                const multiplyRealPolynomials = (left, right) => {
+                    const result = Array.from({ length: left.length + right.length - 1 }, () => 0);
+                    left.forEach((value, i) => right.forEach((other, j) => { result[i + j] += value * other; }));
+                    return result;
+                };
+                const power = (polynomial, exponent) => {
+                    let result = [1];
+                    for (let i = 0; i < exponent; i++) result = multiplyRealPolynomials(result, polynomial);
+                    return result;
+                };
+                const substitute = coefficients => {
+                    let result = [0];
+                    coefficients.forEach((coefficient, index) => {
+                        const term = multiplyRealPolynomials(
+                            power([1, 1], degree - index),
+                            power([1, -1], index)
+                        ).map(value => value * coefficient);
+                        result = addRealPolynomials(result, term);
+                    });
+                    const factor = 2 / dt;
+                    return result.map((value, index) => value / factor ** index).reverse();
+                };
+                const denominator = substitute(discreteDenominator);
+                const numerator = substitute(discreteNumerator);
+                const leading = denominator[0];
+                if (!Number.isFinite(leading) || Math.abs(leading) < 1e-14) {
+                    throw new Error("Bilinear conversion produced a singular denominator.");
+                }
+                return {
+                    method: "bilinear",
+                    numerator: trimPolynomial(numerator.map(value => complex(value / leading))).map(value => value.re),
+                    denominator: trimPolynomial(denominator.map(value => complex(value / leading))).map(value => value.re),
+                    poles: polynomialRoots(denominator),
+                    zeros: polynomialRoots(numerator)
+                };
+            }
+
+            function zeroOrderHold(discreteNumerator, discreteDenominator, dt) {
+                const poles = polynomialRoots(discreteDenominator);
+                const derivative = polynomialDerivative(discreteDenominator);
+                const residues = poles.map(pole => {
+                    if (magnitude(evaluatePolynomial(derivative, pole)) < 1e-9) {
+                        throw new Error("ZOH conversion does not support repeated or near-repeated discrete poles.");
+                    }
+                    return divide(evaluatePolynomial(discreteNumerator, pole), evaluatePolynomial(derivative, pole));
+                });
+                const continuousPoles = poles.map(pole => {
+                    if (magnitude(pole) < 1e-13) {
+                        throw new Error("ZOH conversion cannot represent a pole at z = 0 with a finite continuous pole.");
+                    }
+                    return complex(Math.log(magnitude(pole)) / dt, Math.atan2(pole.im, pole.re) / dt);
+                });
+                const continuousResidues = poles.map((pole, index) => {
+                    const continuousPole = continuousPoles[index];
+                    const difference = subtract(pole, complex(1));
+                    if (magnitude(difference) < 1e-10) return multiply(residues[index], complex(1 / dt));
+                    return divide(multiply(continuousPole, residues[index]), difference);
+                });
+
+                let numerator = Array.from({ length: continuousPoles.length }, () => complex(0));
+                continuousPoles.forEach((pole, index) => {
+                    const otherPoles = continuousPoles.filter((_, otherIndex) => otherIndex !== index);
+                    const term = polynomialFromRoots(otherPoles).map(value => multiply(value, continuousResidues[index]));
+                    numerator = numerator.map((value, coefficientIndex) => add(value, term[coefficientIndex]));
+                });
+                const denominator = polynomialFromRoots(continuousPoles);
+                if (numerator.some(value => Math.abs(value.im) > 1e-7 * Math.max(1, Math.abs(value.re)))
+                    || denominator.some(value => Math.abs(value.im) > 1e-7 * Math.max(1, Math.abs(value.re)))) {
+                    throw new Error("ZOH conversion did not produce real coefficients; the fitted model may not have conjugate-symmetric roots.");
+                }
+                const realNumerator = numerator.map(value => value.re);
+                const realDenominator = normalizeRealPolynomial(denominator);
+                return {
+                    method: "zoh",
+                    numerator: realNumerator,
+                    denominator: realDenominator,
+                    poles: continuousPoles,
+                    zeros: polynomialRoots(realNumerator),
+                    discretePoles: poles,
+                    discreteResidues: residues,
+                    continuousResidues,
+                    evaluate: frequency => evaluateContinuous({ numerator: realNumerator, denominator: realDenominator }, frequency)
+                };
+            }
+
+            function convert(fit, method = "zoh") {
+                const dt = fit.dt;
+                if (!(Number.isFinite(dt) && dt > 0)) throw new Error("A positive finite sampling period is required.");
+                const order = fit.a.length;
+                if (!order || fit.b.length !== order) throw new Error("The discrete model coefficients are invalid.");
+                const denominator = [1, ...fit.a.map(value => -value)];
+                const numerator = [0, ...fit.b];
+                switch (method) {
+                    case "zoh": return zeroOrderHold(numerator, denominator, dt);
+                    case "bilinear": return bilinear(numerator, denominator, dt);
+                    case "matched": return matchedPolesZeros(numerator, denominator, dt, fit.dcGain);
+                    default: throw new Error(`Unknown continuous conversion method: ${method}`);
+                }
+            }
+
+            root.SystemIdConversions = { convert, evaluateContinuous, polynomialRoots };
+        })(window);
+    </script>
+</head>
+<body>
+    <div class="page-shell">
+        <header class="site-header">
+            <span class="brand-mark" aria-hidden="true">S</span>
+            <span>System ID Lite</span>
+        </header>
+
+        <main>
+            <section class="hero">
+                <p class="eyebrow">Data-driven modeling</p>
+                <h1>Turn measured data into a dynamic model.</h1>
+                <p class="hero-copy">Fit a discrete-time transfer function to your input-output data, inspect its poles and time constants, and see how closely the model follows your measurements.</p>
+                <span class="local-note">Your CSV is analyzed in this browser; it is not uploaded.</span>
+            </section>
+
+            <aside class="ad-slot" data-ad-placement="top" aria-label="Advertisement" hidden>
+                <div class="ad-label">Advertisement</div>
+                <ins class="adsbygoogle"
+                    style="display:block"
+                    data-ad-format="auto"
+                    data-full-width-responsive="true"></ins>
+            </aside>
+
+            <section class="panel" aria-labelledby="data-heading">
+                <div class="section-heading">
+                    <span class="step-number" aria-hidden="true">01</span>
+                    <div>
+                        <h2 id="data-heading">Add your experiment</h2>
+                        <p class="section-description">Choose a CSV file and the order of the model to estimate.</p>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div>
+                        <label class="field-label" for="model-order">Transfer function order</label>
+                        <select id="model-order" name="model-order">
+                            <option value="1">1st order</option>
+                            <option value="2">2nd order</option>
+                            <option value="3">3rd order</option>
+                            <option value="4">4th order</option>
+                            <option value="5">5th order</option>
+                            <option value="6">6th order</option>
+                        </select>
+                        <p class="field-hint">Higher orders need more informative data; at least 3 × order samples.</p>
+                    </div>
+                    <label class="drop-zone" id="drop-zone" for="data-file">
+                        <span class="drop-icon" aria-hidden="true">↑</span>
+                        <strong id="file-prompt">Choose a CSV file or drop it here</strong>
+                        <span>Required columns: time, input, output</span>
+                    </label>
+                    <input class="file-input" type="file" id="data-file" accept=".csv,text/csv">
+                </div>
+
+                <div class="actions">
+                    <button class="button button-primary" id="analyze-button" type="button" disabled>Fit model</button>
+                    <button class="button button-secondary" id="sample-button" type="button">Try sample data</button>
+                    <button class="button button-secondary" id="reset-button" type="button" hidden>Clear</button>
+                </div>
+                <p class="status" id="status" role="status" aria-live="polite">Choose a CSV file to get started.</p>
+                <p class="csv-help">CSV format: a header row such as <code>time,input,output</code>, followed by numeric values. Time values must be strictly increasing.</p>
+            </section>
+
+            <section class="panel" id="results" aria-labelledby="results-heading" hidden>
+                <div class="results-header">
+                    <div class="section-heading" style="margin-bottom: 0">
+                        <span class="step-number" aria-hidden="true">02</span>
+                        <div>
+                            <h2 id="results-heading">Model results</h2>
+                            <p class="section-description" id="model-summary"></p>
+                        </div>
+                    </div>
+                    <button class="button button-secondary" id="download-button" type="button">Download predictions CSV</button>
+                </div>
+
+                <div class="metric-grid" aria-label="Fit statistics">
+                    <div class="metric"><span class="metric-label">R²</span><strong class="metric-value" id="r2-value">—</strong></div>
+                    <div class="metric"><span class="metric-label">Sum squared error</span><strong class="metric-value" id="sse-value">—</strong></div>
+                    <div class="metric"><span class="metric-label">RMSE</span><strong class="metric-value" id="rmse-value">—</strong></div>
+                    <div class="metric"><span class="metric-label">DC gain</span><strong class="metric-value" id="gain-value">—</strong></div>
+                </div>
+
+                <div class="chart-frame">
+                    <div id="plot-area" role="img" aria-label="Measured output, model prediction, and input charts">
+                        <div class="chart-placeholder">Your measured data, model fit, and input signal will appear here.</div>
+                    </div>
+                </div>
+
+                <div class="detail-grid">
+                    <section class="detail-card" aria-labelledby="transfer-heading">
+                        <h3 id="transfer-heading">Estimated transfer function</h3>
+                        <div class="domain-controls">
+                            <span class="field-label" style="margin: 0">Display domain</span>
+                            <div class="segmented-control" role="group" aria-label="Transfer function display domain">
+                                <button id="discrete-toggle" type="button" aria-pressed="true">Discrete</button>
+                                <button id="continuous-toggle" type="button" aria-pressed="false">Continuous</button>
+                            </div>
+                            <div class="conversion-control" id="conversion-control" hidden>
+                                <label for="conversion-method">Conversion</label>
+                                <select id="conversion-method">
+                                    <option value="zoh" selected>ZOH</option>
+                                    <option value="bilinear">Bilinear (Tustin)</option>
+                                    <option value="matched">Matched pole-zero</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="domain-note" id="domain-note"></p>
+                        <pre class="equation" id="transfer-function"></pre>
+                        <div style="overflow-x: auto; margin-top: 12px">
+                            <table class="coefficient-table">
+                                <thead><tr><th>Parameter</th><th>Estimate</th><th>90% confidence interval</th></tr></thead>
+                                <tbody id="coefficient-rows"></tbody>
+                            </table>
+                        </div>
+                        <p class="confidence-note">Wald intervals are based on the least-squares residual variance and coefficient covariance, conditional on the measured regressors. They do not include model/order uncertainty or bias from noisy inputs.</p>
+                    </section>
+                    <section class="detail-card" aria-labelledby="pole-heading">
+                        <h3 id="pole-heading">Poles &amp; time constants</h3>
+                        <div style="overflow-x: auto">
+                            <table class="pole-table">
+                                <thead><tr><th>Pole</th><th>Value</th><th>Time constant</th></tr></thead>
+                                <tbody id="pole-rows"></tbody>
+                            </table>
+                        </div>
+                        <p class="model-note" id="pole-note"></p>
+                        <p class="model-note" id="sampling-note"></p>
+                    </section>
+                </div>
+                <section class="frequency-section" aria-labelledby="frequency-heading">
+                    <h3 class="frequency-heading" id="frequency-heading">Frequency response &amp; unity-feedback margins</h3>
+                    <p class="frequency-copy" id="frequency-copy">Bode magnitude/phase and Nyquist response for the selected transfer-function representation.</p>
+                    <div class="frequency-chart"><div id="bode-area" role="img" aria-label="Bode magnitude and phase plot"></div></div>
+                    <div class="frequency-chart"><div id="nyquist-area" role="img" aria-label="Nyquist plot"></div></div>
+                    <div class="margin-grid" aria-label="Stability margins">
+                        <div class="metric"><span class="metric-label">Gain margin</span><strong class="metric-value" id="gain-margin">—</strong></div>
+                        <div class="metric"><span class="metric-label">Phase margin</span><strong class="metric-value" id="phase-margin">—</strong></div>
+                        <div class="metric"><span class="metric-label">Gain crossover</span><strong class="metric-value" id="gain-crossover">—</strong></div>
+                        <div class="metric"><span class="metric-label">Phase crossover</span><strong class="metric-value" id="phase-crossover">—</strong></div>
+                    </div>
+                    <p class="model-note" id="margin-note"></p>
+                </section>
+                <p class="method-note">Model form: y[k] = a₁y[k−1] + … + aₙy[k−n] + b₁u[k−1] + … + bₙu[k−n]. The first n measured outputs initialize the free-run simulation and are excluded from fit statistics.</p>
+            </section>
+        </main>
+
+        <aside class="ad-slot" data-ad-placement="bottom" aria-label="Advertisement" hidden>
+            <div class="ad-label">Advertisement</div>
+            <ins class="adsbygoogle"
+                style="display:block"
+                data-ad-format="auto"
+                data-full-width-responsive="true"></ins>
+        </aside>
+
+        <footer>System ID Lite · Model estimates depend on data quality and the assumptions shown above.</footer>
+    </div>
+
+    <script>
+        "use strict";
+
+        const fileInput = document.getElementById("data-file");
+        const dropZone = document.getElementById("drop-zone");
+        const filePrompt = document.getElementById("file-prompt");
+        const orderInput = document.getElementById("model-order");
+        const analyzeButton = document.getElementById("analyze-button");
+        const sampleButton = document.getElementById("sample-button");
+        const resetButton = document.getElementById("reset-button");
+        const downloadButton = document.getElementById("download-button");
+        const status = document.getElementById("status");
+        const results = document.getElementById("results");
+        const plotArea = document.getElementById("plot-area");
+        const discreteToggle = document.getElementById("discrete-toggle");
+        const continuousToggle = document.getElementById("continuous-toggle");
+        const conversionMethod = document.getElementById("conversion-method");
+        const conversionControl = document.getElementById("conversion-control");
+
+        let experimentalData = null;
+        let sourceName = "data";
+        let latestFit = null;
+        let displayDomain = "discrete";
+        let continuousMethod = "zoh";
+
+        function setStatus(message, kind = "") {
+            status.textContent = message;
+            status.dataset.kind = kind;
+        }
+
+        function clearResults() {
+            latestFit = null;
+            results.hidden = true;
+            resetButton.hidden = !experimentalData;
+            if (typeof Plotly !== "undefined") {
+                Plotly.purge(plotArea);
+                Plotly.purge("bode-area");
+                Plotly.purge("nyquist-area");
+            }
+        }
+
+        function setData(data, name) {
+            experimentalData = data;
+            sourceName = name;
+            filePrompt.textContent = name;
+            analyzeButton.disabled = false;
+            resetButton.hidden = false;
+            clearResults();
+            setStatus(`Loaded ${data.time.length} samples from ${name}.`);
+        }
+
+        fileInput.addEventListener("change", () => {
+            clearResults();
+            experimentalData = null;
+            analyzeButton.disabled = true;
+            resetButton.hidden = true;
+            const file = fileInput.files && fileInput.files[0];
+            if (!file) {
+                filePrompt.textContent = "Choose a CSV file or drop it here";
+                setStatus("Choose a CSV file to get started.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = event => {
+                try {
+                    const text = event.target && event.target.result;
+                    if (typeof text !== "string") {
+                        throw new Error("The selected file could not be read as text.");
+                    }
+                    setData(parseCSV(text), file.name);
+                } catch (error) {
+                    filePrompt.textContent = file.name;
+                    setStatus(`Could not load CSV: ${error.message}`, "error");
+                }
+            };
+            reader.onerror = () => {
+                setStatus("Could not read the selected file.", "error");
+            };
+            reader.readAsText(file);
         });
 
-    } catch (error) {
-        status.textContent = "Analysis error: " + error.message;
-    }
-});
-</script>
+        for (const eventName of ["dragenter", "dragover"]) {
+            dropZone.addEventListener(eventName, event => {
+                event.preventDefault();
+                dropZone.classList.add("dragging");
+            });
+        }
+        for (const eventName of ["dragleave", "drop"]) {
+            dropZone.addEventListener(eventName, event => {
+                event.preventDefault();
+                dropZone.classList.remove("dragging");
+            });
+        }
+        dropZone.addEventListener("drop", event => {
+            const file = event.dataTransfer && event.dataTransfer.files[0];
+            if (!file) return;
+            if (!file.name.toLowerCase().endsWith(".csv")) {
+                setStatus("Please drop a .csv file.", "error");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = loadEvent => {
+                try {
+                    const text = loadEvent.target && loadEvent.target.result;
+                    if (typeof text !== "string") {
+                        throw new Error("The selected file could not be read as text.");
+                    }
+                    setData(parseCSV(text), file.name);
+                } catch (error) {
+                    experimentalData = null;
+                    analyzeButton.disabled = true;
+                    filePrompt.textContent = file.name;
+                    clearResults();
+                    setStatus(`Could not load CSV: ${error.message}`, "error");
+                }
+            };
+            reader.onerror = () => setStatus("Could not read the selected file.", "error");
+            reader.readAsText(file);
+        });
+
+        function parseCSV(text) {
+            const lines = text.replace(/^\uFEFF/, "").trim().split(/\r?\n/);
+            if (lines.length < 2) {
+                throw new Error("Provide a header and at least one data row.");
+            }
+
+            const header = lines[0].split(",").map(value => value.trim().toLowerCase());
+            const timeIndex = header.indexOf("time");
+            const inputIndex = header.indexOf("input");
+            const outputIndex = header.indexOf("output");
+            if ([timeIndex, inputIndex, outputIndex].includes(-1)) {
+                throw new Error("CSV headers must include time, input, and output.");
+            }
+
+            const time = [];
+            const input = [];
+            const output = [];
+            for (let i = 1; i < lines.length; i++) {
+                const row = lines[i].split(",");
+                if (row.every(value => value.trim() === "")) continue;
+                if (row.length <= Math.max(timeIndex, inputIndex, outputIndex)) {
+                    throw new Error(`Missing time, input, or output on line ${i + 1}.`);
+                }
+                const cells = [timeIndex, inputIndex, outputIndex].map(index => row[index].trim());
+                if (cells.some(value => value === "")) {
+                    throw new Error(`Missing numeric data on line ${i + 1}.`);
+                }
+                const values = cells.map(Number);
+                if (!values.every(Number.isFinite)) {
+                    throw new Error(`Invalid numeric data on line ${i + 1}.`);
+                }
+                time.push(values[0]);
+                input.push(values[1]);
+                output.push(values[2]);
+            }
+            if (time.length < 3) {
+                throw new Error("At least three valid data points are required.");
+            }
+            for (let i = 1; i < time.length; i++) {
+                if (time[i] <= time[i - 1]) {
+                    throw new Error("Time must be strictly increasing.");
+                }
+            }
+            return { time, input, output };
+        }
+
+        function dot(left, right) {
+            let result = 0;
+            for (let i = 0; i < left.length; i++) result += left[i] * right[i];
+            return result;
+        }
+
+        function leastSquares(columns, targets) {
+            const columnCount = columns.length;
+            const originalNorms = columns.map(column => Math.sqrt(dot(column, column)));
+            if (originalNorms.some(norm => !Number.isFinite(norm) || norm === 0)) {
+                throw new Error("The data do not sufficiently excite every model coefficient.");
+            }
+
+            const work = columns.map((column, index) => column.map(value => value / originalNorms[index]));
+            const permutation = columns.map((_, index) => index);
+            const r = Array.from({ length: columnCount }, () => Array(columnCount).fill(0));
+            const orthonormal = [];
+
+            for (let k = 0; k < columnCount; k++) {
+                let pivot = k;
+                let largestNormSquared = -1;
+                for (let j = k; j < columnCount; j++) {
+                    const normSquared = dot(work[j], work[j]);
+                    if (normSquared > largestNormSquared) {
+                        largestNormSquared = normSquared;
+                        pivot = j;
+                    }
+                }
+                if (pivot !== k) {
+                    [work[k], work[pivot]] = [work[pivot], work[k]];
+                    [permutation[k], permutation[pivot]] = [permutation[pivot], permutation[k]];
+                    for (let i = 0; i < k; i++) {
+                        [r[i][k], r[i][pivot]] = [r[i][pivot], r[i][k]];
+                    }
+                }
+
+                const column = work[k];
+                for (let pass = 0; pass < 2; pass++) {
+                    for (let i = 0; i < k; i++) {
+                        const projection = dot(orthonormal[i], column);
+                        r[i][k] += projection;
+                        for (let row = 0; row < column.length; row++) {
+                            column[row] -= projection * orthonormal[i][row];
+                        }
+                    }
+                }
+
+                const diagonal = Math.sqrt(dot(column, column));
+                if (!Number.isFinite(diagonal) || diagonal < 1e-10) {
+                    throw new Error("The regression is rank-deficient. Try a lower order or more varied input data.");
+                }
+                r[k][k] = diagonal;
+                orthonormal.push(column.map(value => value / diagonal));
+            }
+
+            const transformedTargets = orthonormal.map(vector => dot(vector, targets));
+            const pivotedCoefficients = Array(columnCount).fill(0);
+            for (let i = columnCount - 1; i >= 0; i--) {
+                let value = transformedTargets[i];
+                for (let j = i + 1; j < columnCount; j++) {
+                    value -= r[i][j] * pivotedCoefficients[j];
+                }
+                pivotedCoefficients[i] = value / r[i][i];
+            }
+
+            const coefficients = Array(columnCount).fill(0);
+            for (let i = 0; i < columnCount; i++) {
+                const originalIndex = permutation[i];
+                coefficients[originalIndex] = pivotedCoefficients[i] / originalNorms[originalIndex];
+            }
+
+            const inverseR = Array.from({ length: columnCount }, () => Array(columnCount).fill(0));
+            for (let column = 0; column < columnCount; column++) {
+                for (let row = columnCount - 1; row >= 0; row--) {
+                    let value = row === column ? 1 : 0;
+                    for (let j = row + 1; j < columnCount; j++) {
+                        value -= r[row][j] * inverseR[j][column];
+                    }
+                    inverseR[row][column] = value / r[row][row];
+                }
+            }
+
+            const normalizedCovariance = Array.from({ length: columnCount }, (_, i) =>
+                Array.from({ length: columnCount }, (_, j) => {
+                    let value = 0;
+                    for (let k = 0; k < columnCount; k++) value += inverseR[i][k] * inverseR[j][k];
+                    return value;
+                })
+            );
+            const covariance = Array.from({ length: columnCount }, () => Array(columnCount).fill(0));
+            for (let i = 0; i < columnCount; i++) {
+                for (let j = 0; j < columnCount; j++) {
+                    const originalI = permutation[i];
+                    const originalJ = permutation[j];
+                    covariance[originalI][originalJ] =
+                        normalizedCovariance[i][j] / (originalNorms[originalI] * originalNorms[originalJ]);
+                }
+            }
+
+            let residualSSE = 0;
+            for (let row = 0; row < targets.length; row++) {
+                let estimate = 0;
+                for (let column = 0; column < columnCount; column++) {
+                    estimate += columns[column][row] * coefficients[column];
+                }
+                residualSSE += (targets[row] - estimate) ** 2;
+            }
+            return { coefficients, covariance, residualSSE };
+        }
+
+        function identifyModel(data, order) {
+            const { time, input, output } = data;
+            const columns = Array.from({ length: 2 * order }, () => []);
+            const targets = [];
+
+            for (let k = order; k < time.length; k++) {
+                for (let lag = 1; lag <= order; lag++) {
+                    columns[lag - 1].push(output[k - lag]);
+                    columns[order + lag - 1].push(input[k - lag]);
+                }
+                targets.push(output[k]);
+            }
+            if (targets.length < columns.length) {
+                throw new Error(`Order ${order} needs at least ${3 * order} samples; this file has ${time.length}.`);
+            }
+
+            const regression = leastSquares(columns, targets);
+            const coefficients = regression.coefficients;
+            const a = coefficients.slice(0, order);
+            const b = coefficients.slice(order);
+            const residualDegreesOfFreedom = targets.length - columns.length;
+            const residualVariance = residualDegreesOfFreedom > 0
+                ? regression.residualSSE / residualDegreesOfFreedom
+                : NaN;
+            const criticalValue = studentTCritical90(residualDegreesOfFreedom);
+            const confidenceIntervals = coefficients.map((estimate, index) => {
+                const standardError = residualVariance >= 0
+                    ? Math.sqrt(Math.max(0, residualVariance * regression.covariance[index][index]))
+                    : NaN;
+                const halfWidth = criticalValue * standardError;
+                return Number.isFinite(halfWidth)
+                    ? [estimate - halfWidth, estimate + halfWidth]
+                    : null;
+            });
+            const predictions = [];
+            for (let k = 0; k < time.length; k++) {
+                if (k < order) {
+                    predictions.push(output[k]);
+                    continue;
+                }
+                let prediction = 0;
+                for (let lag = 1; lag <= order; lag++) {
+                    prediction += a[lag - 1] * predictions[k - lag];
+                    prediction += b[lag - 1] * input[k - lag];
+                }
+                predictions.push(prediction);
+            }
+
+            const scoredOutput = output.slice(order);
+            let sse = 0;
+            let totalSum = 0;
+            const mean = scoredOutput.reduce((sum, value) => sum + value, 0) / scoredOutput.length;
+            for (let k = order; k < output.length; k++) {
+                sse += (output[k] - predictions[k]) ** 2;
+                totalSum += (output[k] - mean) ** 2;
+            }
+            const r2 = totalSum > 0 ? 1 - sse / totalSum : NaN;
+            const dt = (time[time.length - 1] - time[0]) / (time.length - 1);
+            const intervals = time.slice(1).map((value, index) => value - time[index]);
+            let maxIntervalDeviation = 0;
+            for (const interval of intervals) {
+                maxIntervalDeviation = Math.max(maxIntervalDeviation, Math.abs(interval - dt));
+            }
+            const samplingDeviation = maxIntervalDeviation / dt;
+            const dcDenominator = 1 - a.reduce((sum, value) => sum + value, 0);
+            const dcGain = Math.abs(dcDenominator) > 1e-12
+                ? b.reduce((sum, value) => sum + value, 0) / dcDenominator
+                : NaN;
+
+            return {
+                order,
+                a,
+                b,
+                confidenceIntervals,
+                residualDegreesOfFreedom,
+                predictions,
+                sse,
+                rmse: Math.sqrt(sse / scoredOutput.length),
+                r2,
+                dt,
+                samplingDeviation,
+                dcGain
+            };
+        }
+
+        function studentTCritical90(degreesOfFreedom) {
+            if (!(degreesOfFreedom > 0)) return NaN;
+            const z = 1.6448536269514722;
+            const nu = degreesOfFreedom;
+            const z2 = z * z;
+            const z3 = z2 * z;
+            const z5 = z3 * z2;
+            const z7 = z5 * z2;
+            return z
+                + (z3 + z) / (4 * nu)
+                + (5 * z5 + 16 * z3 + 3 * z) / (96 * nu ** 2)
+                + (3 * z7 + 19 * z5 + 17 * z3 - 15 * z) / (384 * nu ** 3);
+        }
+
+        function complex(re, im = 0) { return { re, im }; }
+        function complexAdd(left, right) { return complex(left.re + right.re, left.im + right.im); }
+        function complexSubtract(left, right) { return complex(left.re - right.re, left.im - right.im); }
+        function complexMultiply(left, right) {
+            return complex(left.re * right.re - left.im * right.im, left.re * right.im + left.im * right.re);
+        }
+        function complexDivide(left, right) {
+            const denominator = right.re * right.re + right.im * right.im;
+            if (denominator < 1e-28) throw new Error("Could not resolve repeated poles.");
+            return complex(
+                (left.re * right.re + left.im * right.im) / denominator,
+                (left.im * right.re - left.re * right.im) / denominator
+            );
+        }
+        function complexMagnitude(value) { return Math.hypot(value.re, value.im); }
+
+        function findPoles(a) {
+            const order = a.length;
+            const polynomial = [1, ...a.map(value => -value)];
+            const radius = 1 + Math.max(...polynomial.slice(1).map(Math.abs));
+            let roots = Array.from({ length: order }, (_, index) => {
+                const angle = 2 * Math.PI * (index + 0.31) / order;
+                return complex(radius * Math.cos(angle), radius * Math.sin(angle));
+            });
+
+            for (let iteration = 0; iteration < 3000; iteration++) {
+                let largestCorrection = 0;
+                const nextRoots = roots.map((root, index) => {
+                    let value = complex(polynomial[0]);
+                    for (let j = 1; j < polynomial.length; j++) {
+                        value = complexAdd(complexMultiply(value, root), complex(polynomial[j]));
+                    }
+                    let denominator = complex(1);
+                    for (let j = 0; j < order; j++) {
+                        if (j !== index) denominator = complexMultiply(denominator, complexSubtract(root, roots[j]));
+                    }
+                    const correction = complexDivide(value, denominator);
+                    largestCorrection = Math.max(largestCorrection, complexMagnitude(correction));
+                    return complexSubtract(root, correction);
+                });
+                roots = nextRoots;
+                if (largestCorrection < 1e-11) return roots;
+            }
+            return null;
+        }
+
+        function formatNumber(value, digits = 6) {
+            if (!Number.isFinite(value)) return "Not defined";
+            if (value === 0) return "0";
+            return Number(value).toPrecision(digits).replace(/\.?0+e/, "e").replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+        }
+
+        function formatPolynomial(coefficients, degree) {
+            const terms = [];
+            coefficients.forEach((coefficient, index) => {
+                if (Math.abs(coefficient) < 1e-14) return;
+                const power = degree - index;
+                const sign = coefficient < 0 ? "−" : "+";
+                const absolute = Math.abs(coefficient);
+                const variable = power > 1 ? `z^${power}` : power === 1 ? "z" : "";
+                const magnitude = variable && Math.abs(absolute - 1) < 1e-14 ? "" : formatNumber(absolute);
+                const term = `${magnitude}${variable}`;
+                terms.push({ sign, term });
+            });
+            if (!terms.length) return "0";
+            return terms.map((entry, index) => `${index === 0 ? (entry.sign === "−" ? "−" : "") : ` ${entry.sign} `}${entry.term}`).join("");
+        }
+
+        function formatContinuousPolynomial(coefficients) {
+            const degree = coefficients.length - 1;
+            const terms = [];
+            coefficients.forEach((coefficient, index) => {
+                if (Math.abs(coefficient) < 1e-14) return;
+                const power = degree - index;
+                const sign = coefficient < 0 ? "−" : "+";
+                const variable = power > 1 ? `s^${power}` : power === 1 ? "s" : "";
+                const magnitude = variable && Math.abs(Math.abs(coefficient) - 1) < 1e-14
+                    ? ""
+                    : formatNumber(Math.abs(coefficient));
+                terms.push({ sign, term: `${magnitude}${variable}` });
+            });
+            if (!terms.length) return "0";
+            return terms.map((entry, index) =>
+                `${index === 0 ? (entry.sign === "−" ? "−" : "") : ` ${entry.sign} `}${entry.term}`
+            ).join("");
+        }
+
+        function evaluateDiscrete(fit, frequency) {
+            const angle = frequency * fit.dt;
+            const z = complex(Math.cos(angle), Math.sin(angle));
+            let numerator = complex(0);
+            for (const coefficient of fit.b) {
+                numerator = complexAdd(complexMultiply(numerator, z), complex(coefficient));
+            }
+            let denominator = complex(1);
+            for (const coefficient of fit.a) {
+                denominator = complexAdd(complexMultiply(denominator, z), complex(-coefficient));
+            }
+            return complexDivide(numerator, denominator);
+        }
+
+        function evaluateContinuous(model, frequency) {
+            return SystemIdConversions.evaluateContinuous(model, frequency);
+        }
+
+        function interpolateLogFrequency(frequencyLeft, frequencyRight, valueLeft, valueRight, target) {
+            if (valueRight === valueLeft) return Math.sqrt(frequencyLeft * frequencyRight);
+            const fraction = Math.max(0, Math.min(1, (target - valueLeft) / (valueRight - valueLeft)));
+            return Math.exp(Math.log(frequencyLeft) + fraction * (Math.log(frequencyRight) - Math.log(frequencyLeft)));
+        }
+
+        function findStabilityMargins(frequencies, magnitudeDb, phase, dcGain) {
+            const gainCrossings = [];
+            const phaseCrossings = [];
+            for (let i = 0; i < frequencies.length - 1; i++) {
+                if ((magnitudeDb[i] <= 0 && magnitudeDb[i + 1] >= 0)
+                    || (magnitudeDb[i] >= 0 && magnitudeDb[i + 1] <= 0)) {
+                    const frequency = interpolateLogFrequency(
+                        frequencies[i], frequencies[i + 1], magnitudeDb[i], magnitudeDb[i + 1], 0
+                    );
+                    const fraction = (Math.log(frequency) - Math.log(frequencies[i]))
+                        / (Math.log(frequencies[i + 1]) - Math.log(frequencies[i]));
+                    gainCrossings.push({
+                        frequency,
+                        phase: phase[i] + fraction * (phase[i + 1] - phase[i])
+                    });
+                }
+
+                const lower = Math.min(phase[i], phase[i + 1]);
+                const upper = Math.max(phase[i], phase[i + 1]);
+                const firstTurn = Math.ceil((lower + 180) / 360);
+                const lastTurn = Math.floor((upper + 180) / 360);
+                for (let turn = firstTurn; turn <= lastTurn; turn++) {
+                    const target = -180 + 360 * turn;
+                    if (phase[i] === phase[i + 1]) continue;
+                    const frequency = interpolateLogFrequency(
+                        frequencies[i], frequencies[i + 1], phase[i], phase[i + 1], target
+                    );
+                    const fraction = (Math.log(frequency) - Math.log(frequencies[i]))
+                        / (Math.log(frequencies[i + 1]) - Math.log(frequencies[i]));
+                    phaseCrossings.push({
+                        frequency,
+                        magnitudeDb: magnitudeDb[i] + fraction * (magnitudeDb[i + 1] - magnitudeDb[i])
+                    });
+                }
+            }
+            if (Number.isFinite(dcGain) && Math.abs(Math.abs(dcGain) - 1) < 1e-8) {
+                gainCrossings.push({ frequency: 0, phase: dcGain < 0 ? -180 : 0 });
+                if (dcGain < 0) phaseCrossings.push({ frequency: 0, magnitudeDb: 0 });
+            }
+            const uniqueByFrequency = crossings => {
+                crossings.sort((left, right) => left.frequency - right.frequency);
+                return crossings.filter((crossing, index) => index === 0
+                    || Math.abs(Math.log(Math.max(crossing.frequency, 1e-300))
+                        - Math.log(Math.max(crossings[index - 1].frequency, 1e-300))) > 1e-8);
+            };
+            const uniqueGainCrossings = uniqueByFrequency(gainCrossings);
+            const uniquePhaseCrossings = uniqueByFrequency(phaseCrossings);
+            return {
+                gainCrossing: uniqueGainCrossings[0] || null,
+                phaseCrossing: uniquePhaseCrossings[0] || null,
+                gainCrossingCount: uniqueGainCrossings.length,
+                phaseCrossingCount: uniquePhaseCrossings.length
+            };
+        }
+
+        function renderDomainDisplay(fit) {
+            const isDiscrete = displayDomain === "discrete";
+            discreteToggle.setAttribute("aria-pressed", String(isDiscrete));
+            continuousToggle.setAttribute("aria-pressed", String(!isDiscrete));
+            conversionControl.hidden = isDiscrete;
+            const transferFunction = document.getElementById("transfer-function");
+            const domainNote = document.getElementById("domain-note");
+            const frequencyCopy = document.getElementById("frequency-copy");
+            const coefficientRows = document.getElementById("coefficient-rows");
+            const poleRows = document.getElementById("pole-rows");
+            const poleNote = document.getElementById("pole-note");
+            coefficientRows.replaceChildren();
+            poleRows.replaceChildren();
+
+            let model;
+            let poles;
+            if (isDiscrete) {
+                model = {
+                    evaluate: frequency => evaluateDiscrete(fit, frequency),
+                    maxFrequency: Math.PI / fit.dt
+                };
+                const numerator = formatPolynomial(fit.b, fit.order - 1);
+                const denominator = formatPolynomial([1, ...fit.a.map(value => -value)], fit.order);
+                transferFunction.textContent =
+                    `G(z) = (${numerator}) / (${denominator})\n\nSample period Δt = ${formatNumber(fit.dt)} s · DC gain = ${formatNumber(fit.dcGain)}`;
+                domainNote.textContent = "Discrete ARX transfer function fitted directly from your sampled data. Frequency response is evaluated on the unit circle up to the Nyquist frequency.";
+                frequencyCopy.textContent = "Discrete frequency response up to Nyquist (π/Δt); displayed frequencies are in rad/s.";
+                for (let i = 0; i < fit.order; i++) {
+                    const interval = fit.confidenceIntervals[i];
+                    const rowA = document.createElement("tr");
+                    rowA.append(makeCell(`a${i + 1}`), makeCell(formatNumber(fit.a[i])),
+                        makeCell(interval ? `[${formatNumber(interval[0], 8)}, ${formatNumber(interval[1], 8)}]` : "Unavailable"));
+                    coefficientRows.append(rowA);
+                    const bInterval = fit.confidenceIntervals[fit.order + i];
+                    const rowB = document.createElement("tr");
+                    rowB.append(makeCell(`b${i + 1}`), makeCell(formatNumber(fit.b[i])),
+                            makeCell(bInterval ? `[${formatNumber(bInterval[0], 8)}, ${formatNumber(bInterval[1], 8)}]` : "Unavailable"));
+                    coefficientRows.append(rowB);
+                }
+                poles = findPoles(fit.a);
+                if (poles) {
+                    poles.sort((left, right) => complexMagnitude(left) - complexMagnitude(right));
+                    poles.forEach((pole, index) => {
+                        const magnitude = complexMagnitude(pole);
+                        const stable = magnitude < 1 - 1e-10;
+                        const timeConstant = magnitude <= 1e-14
+                            ? "0 s"
+                            : stable
+                                ? `${formatNumber(-fit.dt / Math.log(magnitude))} s`
+                                : "No finite decay";
+                        const value = Math.abs(pole.im) < 1e-9
+                            ? formatNumber(pole.re)
+                            : `${formatNumber(pole.re)} ${pole.im < 0 ? "−" : "+"} ${formatNumber(Math.abs(pole.im))}i`;
+                        const row = document.createElement("tr");
+                        row.append(makeCell(`p${index + 1}`), makeCell(value), makeCell(timeConstant));
+                        poleRows.append(row);
+                    });
+                    poleNote.textContent = poles.some(pole => complexMagnitude(pole) >= 1 - 1e-10)
+                        ? "At least one pole is on or outside the unit circle; the fitted discrete model is not asymptotically stable."
+                        : "Pole time constants describe the exponential decay envelope in seconds.";
+                } else {
+                    poleNote.textContent = "Pole calculation did not converge for these coefficients.";
+                }
+            } else {
+                try {
+                    const equivalent = SystemIdConversions.convert(fit, continuousMethod);
+                    model = {
+                        evaluate: frequency => evaluateContinuous(equivalent, frequency),
+                        maxFrequency: Math.PI / fit.dt
+                    };
+                    poles = equivalent.poles;
+                    const numerator = formatNumber(equivalent.numerator);
+                    const denominator = formatContinuousPolynomial(equivalent.denominator);
+                    transferFunction.textContent =
+                        `Gₘ(s) = (${formatContinuousPolynomial(equivalent.numerator)}) / (${denominator})\n\n${continuousMethodDescription(continuousMethod)} · sampling period Δt = ${formatNumber(fit.dt)} s · DC gain = ${formatNumber(fit.dcGain)}`;
+                    domainNote.textContent = continuousMethodDescription(continuousMethod, true);
+                    frequencyCopy.textContent = `${continuousMethodLabel(continuousMethod)} conversion, shown over the same bandwidth (up to the source data's Nyquist frequency).`;
+                    for (let i = 0; i < fit.order; i++) {
+                        const intervalA = fit.confidenceIntervals[i];
+                        const intervalB = fit.confidenceIntervals[fit.order + i];
+                        const rowA = document.createElement("tr");
+                        rowA.append(makeCell(`Discrete a${i + 1}`), makeCell(formatNumber(fit.a[i])),
+                            makeCell(intervalA ? `[${formatNumber(intervalA[0], 8)}, ${formatNumber(intervalA[1], 8)}]` : "Unavailable"));
+                        const rowB = document.createElement("tr");
+                        rowB.append(makeCell(`Discrete b${i + 1}`), makeCell(formatNumber(fit.b[i])),
+                            makeCell(intervalB ? `[${formatNumber(intervalB[0], 8)}, ${formatNumber(intervalB[1], 8)}]` : "Unavailable"));
+                        coefficientRows.append(rowA, rowB);
+                    }
+
+                    function continuousMethodLabel(method) {
+                        return method === "zoh" ? "ZOH"
+                            : method === "bilinear" ? "Bilinear (Tustin)"
+                                : "Matched pole-zero";
+                    }
+
+                    function continuousMethodDescription(method, detailed = false) {
+                        if (method === "zoh") {
+                            return detailed
+                                ? "Zero-order-hold inverse: constructs a continuous model whose ZOH pulse-transfer function reproduces the fitted discrete model for sample-and-hold inputs, subject to a real principal-log realization. This is exact at the sampling instants under those assumptions; it does not recover a unique original continuous plant or guarantee identical behavior between samples."
+                                : "ZOH inverse (exact sampled-data equivalence under the stated hold and principal-log assumptions)";
+                        }
+                        if (method === "bilinear") {
+                            return detailed
+                                ? "Inverse bilinear (Tustin) transform: substitutes z = (1 + sΔt/2)/(1 − sΔt/2). This is an exact algebraic mapping of the fitted discrete transfer function, not an exact physical inverse of sampling; frequency warping applies."
+                                : "Inverse bilinear (Tustin) transform (frequency-warped algebraic equivalent)";
+                        }
+                        return detailed
+                            ? "Matched pole-zero conversion: maps finite poles and zeros with s = ln(z)/Δt and adjusts gain to preserve DC gain. Discrete zeros at z = 0 map to zeros at infinity; principal-log aliasing and repeated-root limitations apply."
+                            : "Matched pole-zero mapping (principal logarithm; DC gain preserved)";
+                    }
+                    poles.sort((left, right) => left.re - right.re || left.im - right.im);
+                    poles.forEach((pole, index) => {
+                        const stable = pole.re < -1e-10;
+                        const timeConstant = Math.abs(pole.re) < 1e-14
+                            ? "No finite decay"
+                            : stable ? `${formatNumber(-1 / pole.re)} s` : "No finite decay";
+                        const value = Math.abs(pole.im) < 1e-9
+                            ? formatNumber(pole.re)
+                            : `${formatNumber(pole.re)} ${pole.im < 0 ? "−" : "+"} ${formatNumber(Math.abs(pole.im))}i`;
+                        const row = document.createElement("tr");
+                        row.append(makeCell(`p${index + 1}`), makeCell(value), makeCell(timeConstant));
+                        poleRows.append(row);
+                    });
+                    poleNote.textContent = poles.some(pole => pole.re >= -1e-10)
+                        ? "At least one mapped pole is on or to the right of the imaginary axis; the continuous approximation is not asymptotically stable."
+                        : "Time constants are −1/Re(p); imaginary parts indicate oscillation frequency.";
+                } catch (error) {
+                    model = null;
+                    poles = null;
+                    transferFunction.textContent = "Continuous approximation unavailable.";
+                    domainNote.textContent = error.message;
+                    coefficientRows.replaceChildren();
+                    poleNote.textContent = error.message;
+                }
+            }
+
+            if (!fit.residualDegreesOfFreedom) {
+                document.querySelector(".confidence-note").textContent =
+                    "90% confidence intervals are unavailable: there are no residual degrees of freedom. Use more samples than fitted parameters.";
+            } else {
+                document.querySelector(".confidence-note").textContent =
+                    `90% Wald intervals for the fitted discrete aᵢ and bᵢ coefficients use one-step residual variance (ν = ${fit.residualDegreesOfFreedom}) and QR-derived covariance, conditional on measured regressors. The continuous matched-pole approximation is derived, not refit; its coefficients have no direct intervals here. Interpretation assumes independent, homoscedastic residuals and noise-free regressors; output measurement noise can bias ARX estimates.`;
+            }
+
+            if (model) renderFrequencyResponse(model, fit);
+            else {
+                for (const id of ["bode-area", "nyquist-area"]) {
+                    const chart = document.getElementById(id);
+                    if (typeof Plotly !== "undefined") Plotly.purge(chart);
+                    chart.innerHTML = '<div class="chart-placeholder">Frequency response is unavailable for this domain representation.</div>';
+                }
+                ["gain-margin", "phase-margin", "gain-crossover", "phase-crossover"].forEach(id => {
+                    document.getElementById(id).textContent = "Not available";
+                });
+                document.getElementById("margin-note").textContent = "Choose the discrete representation to inspect the directly fitted model's frequency response.";
+            }
+        }
+
+        function renderFrequencyResponse(model, fit) {
+            if (typeof Plotly === "undefined") {
+                document.getElementById("margin-note").textContent = "The chart library could not be loaded; frequency plots and margins are unavailable.";
+                return;
+            }
+            const maxFrequency = model.maxFrequency;
+            const minFrequency = Math.max(1e-6 / fit.dt, maxFrequency * 1e-5);
+            const pointCount = 360;
+            const frequencies = Array.from({ length: pointCount }, (_, index) =>
+                Math.exp(Math.log(minFrequency)
+                    + (Math.log(maxFrequency) - Math.log(minFrequency)) * index / (pointCount - 1))
+            );
+            const response = frequencies.map(frequency => model.evaluate(frequency));
+            const magnitudeDb = response.map(value => 20 * Math.log10(Math.max(complexMagnitude(value), 1e-14)));
+            const phase = [];
+            for (const value of response) {
+                const raw = Math.atan2(value.im, value.re) * 180 / Math.PI;
+                if (!phase.length) {
+                    phase.push(raw);
+                } else {
+                    let unwrapped = raw;
+                    while (unwrapped - phase[phase.length - 1] > 180) unwrapped -= 360;
+                    while (unwrapped - phase[phase.length - 1] < -180) unwrapped += 360;
+                    phase.push(unwrapped);
+                }
+            }
+            const margins = findStabilityMargins(frequencies, magnitudeDb, phase, fit.dcGain);
+            const angle = Math.PI / 180;
+            const marginText = (id, value) => {
+                document.getElementById(id).textContent = value;
+            };
+            marginText("gain-margin", margins.phaseCrossing
+                ? `${formatNumber(-margins.phaseCrossing.magnitudeDb)} dB`
+                : "No phase crossover");
+            marginText("phase-margin", margins.gainCrossing
+                ? `${formatNumber(180 + margins.gainCrossing.phase)}°`
+                : "No gain crossover");
+            marginText("gain-crossover", margins.gainCrossing
+                ? `${formatNumber(margins.gainCrossing.frequency)} rad/s`
+                : "None in range");
+            marginText("phase-crossover", margins.phaseCrossing
+                ? `${formatNumber(margins.phaseCrossing.frequency)} rad/s`
+                : "None in range");
+            let marginNote = "Unity-feedback loop margins are estimated by log-frequency interpolation; they are not a substitute for evaluating the actual controller and closed loop.";
+            if ((margins.gainCrossing && 180 + margins.gainCrossing.phase < 0)
+                || (margins.phaseCrossing && -margins.phaseCrossing.magnitudeDb < 0)) {
+                marginNote += " A negative phase or gain margin indicates the unity-feedback system would be unstable at that crossover.";
+            }
+            if (margins.gainCrossingCount > 1 || margins.phaseCrossingCount > 1) {
+                marginNote += ` Multiple crossings detected (gain: ${margins.gainCrossingCount}, phase: ${margins.phaseCrossingCount}); the displayed values use the lowest-frequency crossing.`;
+            }
+            document.getElementById("margin-note").textContent = marginNote;
+
+            const commonFont = { family: "Inter, system-ui, sans-serif", color: "#52617d", size: 12 };
+            Plotly.react("bode-area", [
+                { x: frequencies, y: magnitudeDb, type: "scatter", mode: "lines", name: "Magnitude", line: { color: "#315ee8", width: 2.2 }, xaxis: "x", yaxis: "y" },
+                { x: frequencies, y: phase, type: "scatter", mode: "lines", name: "Phase", line: { color: "#e05c62", width: 2.2 }, xaxis: "x", yaxis: "y2" }
+            ], {
+                autosize: true,
+                height: 380,
+                margin: { l: 62, r: 64, t: 45, b: 52 },
+                paper_bgcolor: "#fff",
+                plot_bgcolor: "#fff",
+                font: commonFont,
+                title: { text: "Bode response", x: 0.04, xanchor: "left", font: { size: 14 } },
+                legend: { orientation: "h", x: 0, y: 1.14 },
+                xaxis: { type: "log", title: "Angular frequency (rad/s)", gridcolor: "#edf0f5" },
+                yaxis: { title: "Magnitude (dB)", gridcolor: "#edf0f5", zerolinecolor: "#cbd4e2" },
+                yaxis2: { title: "Phase (deg)", overlaying: "y", side: "right", showgrid: false, zeroline: false },
+                shapes: [
+                    { type: "line", xref: "x", yref: "y", x0: minFrequency, x1: maxFrequency, y0: 0, y1: 0, line: { color: "#98a3b6", dash: "dot", width: 1 } },
+                    ...(margins.gainCrossing ? [{ type: "line", xref: "x", yref: "y", x0: margins.gainCrossing.frequency, x1: margins.gainCrossing.frequency, y0: Math.min(...magnitudeDb), y1: Math.max(...magnitudeDb), line: { color: "#98a3b6", dash: "dot", width: 1 } }] : [])
+                ]
+            }, { responsive: true, displaylogo: false }).catch(error => {
+                setStatus(`Could not render Bode plot: ${error.message}`, "error");
+            });
+
+            const positiveReal = response.map(value => value.re);
+            const positiveImaginary = response.map(value => value.im);
+            const nyquistReal = positiveReal.concat(positiveReal.slice().reverse());
+            const nyquistImaginary = positiveImaginary.concat(positiveImaginary.slice().reverse().map(value => -value));
+            Plotly.react("nyquist-area", [
+                { x: nyquistReal, y: nyquistImaginary, type: "scatter", mode: "lines", name: "Nyquist contour", line: { color: "#315ee8", width: 2.2 } },
+                { x: [-1], y: [0], type: "scatter", mode: "markers+text", name: "Critical point", text: ["−1"], textposition: "top right", marker: { color: "#e05c62", size: 10, symbol: "x" } }
+            ], {
+                autosize: true,
+                height: 380,
+                margin: { l: 58, r: 22, t: 45, b: 52 },
+                paper_bgcolor: "#fff",
+                plot_bgcolor: "#fff",
+                font: commonFont,
+                title: { text: "Nyquist response (positive and negative frequencies)", x: 0.04, xanchor: "left", font: { size: 14 } },
+                xaxis: { title: "Real", scaleanchor: "y", scaleratio: 1, gridcolor: "#edf0f5", zerolinecolor: "#aab5c6" },
+                yaxis: { title: "Imaginary", gridcolor: "#edf0f5", zerolinecolor: "#aab5c6" },
+                showlegend: false
+            }, { responsive: true, displaylogo: false }).catch(error => {
+                setStatus(`Could not render Nyquist plot: ${error.message}`, "error");
+            });
+        }
+
+        function makeCell(text) {
+            const cell = document.createElement("td");
+            cell.textContent = text;
+            return cell;
+        }
+
+        function renderResults(data, fit) {
+            latestFit = fit;
+            results.hidden = false;
+            document.getElementById("model-summary").textContent =
+                `${fit.order}${fit.order === 1 ? "st" : fit.order === 2 ? "nd" : fit.order === 3 ? "rd" : "th"}-order ARX model · ${data.time.length} samples · Δt ≈ ${formatNumber(fit.dt)} s`;
+            document.getElementById("r2-value").textContent = formatNumber(fit.r2);
+            document.getElementById("sse-value").textContent = formatNumber(fit.sse);
+            document.getElementById("rmse-value").textContent = formatNumber(fit.rmse);
+            document.getElementById("gain-value").textContent = formatNumber(fit.dcGain);
+            document.getElementById("sampling-note").textContent =
+                fit.samplingDeviation > 0.01
+                    ? `Warning: sample intervals vary by up to ${formatNumber(100 * fit.samplingDeviation, 3)}% from their mean. ARX fitting assumes uniform sampling.`
+                    : `Sampling interval variation is within ${formatNumber(100 * fit.samplingDeviation, 3)}% of the mean.`;
+            renderDomainDisplay(fit);
+
+            if (typeof Plotly === "undefined") {
+                plotArea.innerHTML = '<div class="chart-placeholder">The model was fitted, but the chart library could not be loaded. Check your connection and reload to view the plot.</div>';
+                setStatus("Fit complete. The chart library is unavailable, so the plot could not be drawn.", "error");
+                return;
+            }
+
+            const traces = [
+                {
+                    x: data.time,
+                    y: data.output,
+                    type: "scatter",
+                    mode: "markers",
+                    name: "Measured output",
+                    marker: { color: "#315ee8", size: 6, opacity: 0.75 }
+                },
+                {
+                    x: data.time,
+                    y: fit.predictions,
+                    type: "scatter",
+                    mode: "lines",
+                    name: "Model prediction",
+                    line: { color: "#e05c62", width: 2.5 }
+                },
+                {
+                    x: data.time,
+                    y: data.input,
+                    type: "scatter",
+                    mode: "lines",
+                    name: "Input",
+                    yaxis: "y2",
+                    line: { color: "#11998e", width: 1.8, shape: "hv" }
+                }
+            ];
+            const layout = {
+                autosize: true,
+                height: window.innerWidth < 560 ? 410 : 480,
+                margin: { l: 58, r: 22, t: 48, b: 48 },
+                paper_bgcolor: "#fff",
+                plot_bgcolor: "#fff",
+                font: { family: "Inter, system-ui, sans-serif", color: "#52617d", size: 12 },
+                legend: { orientation: "h", x: 0, y: 1.13 },
+                xaxis: { title: "Time (s)", domain: [0, 1], anchor: "y2", gridcolor: "#edf0f5" },
+                yaxis: { title: "Output", domain: [0.34, 1], gridcolor: "#edf0f5", zerolinecolor: "#d9dfeb" },
+                yaxis2: { title: "Input", domain: [0, 0.22], gridcolor: "#edf0f5", zerolinecolor: "#d9dfeb" },
+                hovermode: "x unified"
+            };
+            Plotly.newPlot(plotArea, traces, layout, { responsive: true, displaylogo: false }).catch(error => {
+                setStatus(`The model was fitted, but the chart could not be drawn: ${error.message}`, "error");
+            });
+            setStatus(`Fit complete using ${data.time.length - fit.order} observations after initialization.`, "success");
+        }
+
+        analyzeButton.addEventListener("click", () => {
+            if (!experimentalData) return;
+            analyzeButton.disabled = true;
+            try {
+                const fit = identifyModel(experimentalData, Number(orderInput.value));
+                renderResults(experimentalData, fit);
+            } catch (error) {
+                setStatus(`Analysis error: ${error.message}`, "error");
+            } finally {
+                analyzeButton.disabled = false;
+            }
+        });
+
+        discreteToggle.addEventListener("click", () => {
+            displayDomain = "discrete";
+            if (latestFit) renderDomainDisplay(latestFit);
+        });
+
+        continuousToggle.addEventListener("click", () => {
+            displayDomain = "continuous";
+            if (latestFit) renderDomainDisplay(latestFit);
+        });
+
+        conversionMethod.addEventListener("change", () => {
+            continuousMethod = conversionMethod.value;
+            if (latestFit && displayDomain === "continuous") renderDomainDisplay(latestFit);
+        });
+
+        sampleButton.addEventListener("click", () => {
+            orderInput.value = "1";
+            const time = [];
+            const input = [];
+            const output = [];
+            const samples = 61;
+            for (let k = 0; k < samples; k++) {
+                time.push(k * 0.1);
+                input.push(k >= 10 ? 1 : 0);
+                output.push(k === 0 ? 0 : 0.8 * output[k - 1] + 0.2 * input[k - 1]);
+            }
+            fileInput.value = "";
+            setData({ time, input, output }, "sample data");
+            analyzeButton.focus();
+        });
+
+        resetButton.addEventListener("click", () => {
+            fileInput.value = "";
+            experimentalData = null;
+            sourceName = "data";
+            filePrompt.textContent = "Choose a CSV file or drop it here";
+            analyzeButton.disabled = true;
+            resetButton.hidden = true;
+            clearResults();
+            setStatus("Choose a CSV file to get started.");
+        });
+
+        orderInput.addEventListener("change", () => {
+            if (experimentalData) {
+                clearResults();
+                setStatus(`Order changed to ${orderInput.value}. Fit the model to update the results.`);
+            }
+        });
+
+        downloadButton.addEventListener("click", () => {
+            if (!experimentalData || !latestFit) return;
+            const rows = ["time,input,measured_output,predicted_output,residual"];
+            for (let i = 0; i < experimentalData.time.length; i++) {
+                const residual = experimentalData.output[i] - latestFit.predictions[i];
+                rows.push([
+                    experimentalData.time[i],
+                    experimentalData.input[i],
+                    experimentalData.output[i],
+                    latestFit.predictions[i],
+                    residual
+                ].join(","));
+            }
+            const blob = new Blob([rows.join("\r\n")], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${sourceName.replace(/\.csv$/i, "").replace(/[^a-z0-9_-]+/gi, "-")}-predictions.csv`;
+            document.body.append(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        });
+    </script>
+    <script>
+        (() => {
+            "use strict";
+
+            const adsenseClientId = "";
+            const adSlotIds = {
+                top: "",
+                bottom: ""
+            };
+            const configuredSlots = Object.entries(adSlotIds).filter(([, slotId]) => slotId !== "");
+
+            if (!adsenseClientId && configuredSlots.length === 0) return;
+            if (!/^ca-pub-\d{16}$/.test(adsenseClientId)) {
+                console.error("AdSense is disabled: set a valid ca-pub publisher ID in the AdSense configuration.");
+                return;
+            }
+            if (configuredSlots.length === 0 || configuredSlots.some(([, slotId]) => !/^\d+$/.test(slotId))) {
+                console.error("AdSense is disabled: configure a numeric ad-slot ID for each enabled placement.");
+                return;
+            }
+
+            const ads = document.createElement("script");
+            ads.async = true;
+            ads.crossOrigin = "anonymous";
+            ads.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adsenseClientId)}`;
+            document.head.append(ads);
+
+            for (const [placement, slotId] of configuredSlots) {
+                const container = document.querySelector(`[data-ad-placement="${placement}"]`);
+                const ad = container && container.querySelector(".adsbygoogle");
+                if (!container || !ad) {
+                    console.error(`AdSense placement "${placement}" is configured but its markup is missing.`);
+                    continue;
+                }
+
+                ad.dataset.adClient = adsenseClientId;
+                ad.dataset.adSlot = slotId;
+                container.hidden = false;
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+            }
+        })();
+    </script>
 </body>
 </html>

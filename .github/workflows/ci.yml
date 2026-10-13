@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  regression-tests:
+    runs-on: [self-hosted, windows, x64]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Node.js version
+        shell: powershell
+        run: |
+          $version = node --version
+          if ($version -notmatch '^v(22|2[3-9]|[3-9][0-9])\.') {
+            throw "Node.js 22 or newer is required; found $version"
+          }
+      - name: Run regression tests
+        shell: powershell
+        run: node --test tests/conversions.test.cjs tests/model-identification.test.cjs
